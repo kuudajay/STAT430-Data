@@ -1,0 +1,87 @@
+# load packages
+library('data.table')
+library('ballr')
+library('magrittr')
+library('stringi')
+
+# -------------------------------------------------------------------------------
+# playerStats()
+	# inputs: a single string or vector of strings (max length = 4) specifying the desired stat types,
+	#		  and a numeric vector containing the desired seasons. a season should be the calendar year 
+	#		  of the spring of each season.
+	# outputs: a list of data.table's at the player-season level for each stat type specified
+playerStats <- function(type = c('advanced', 'standard', 'per100', 'per36'), seasons) {
+  # initialize empty dts
+  advanced.dt <- data.table(rk=numeric(),
+                            player=character(), pos=character(), age=numeric(), tm=character(),g=numeric(),mp=numeric(),
+                            per=numeric(),tspercent=numeric(),x3par=numeric(),ftr=numeric(), orbpercent=numeric(),
+                            drbpercent=numeric(),trbpercent=numeric(),astpercent=numeric(),stlpercent=numeric(),
+                            blkpercent=numeric(),tovpercent=numeric(),usgpercent=numeric(),x=character(),ows=numeric(),
+                            dws=numeric(),ws=numeric(),ws_48=numeric(),x_2=character(),obpm=numeric(),dbpm=numeric(),
+                            bpm=numeric(),vorp=numeric(),link=character(),season=numeric())
+  standard.dt <- data.table(rk=numeric(),
+                            player=character(), pos=character(), age=numeric(), tm=character(),g=numeric(),gs=numeric(),
+                            mp=numeric(),fg=numeric(),fga=numeric(),fgpercent=numeric(),x3p=numeric(),x3pa=numeric(),
+                            x3ppercent=numeric(),x2p=numeric(),x2pa=numeric(),x2ppercent=numeric(),efgpercent=numeric(),
+                            ft=numeric(),fta=numeric(),ftpercent=numeric(),orb=numeric(),drb=numeric(),trb=numeric(),
+                            ast=numeric(),stl=numeric(),blk=numeric(),tov=numeric(),pf=numeric(),pts=numeric(),
+                            link=character(),season=numeric())
+  per100.dt <- data.table(rk=numeric(),player=character(),pos=character(),age=numeric(),tm=character(),g=numeric(),
+                          gs=numeric(),mp=numeric(),fg=numeric(),fga=numeric(),fgpercent=numeric(),x3p=numeric(),
+                          x3pa=numeric(),x3ppercent=numeric(),x2p=numeric(),x2pa=numeric(),x2ppercent=numeric(),
+                          ft=numeric(),fta=numeric(),ftpercent=numeric(),orb=numeric(),drb=numeric(),trb=numeric(),
+                          ast=numeric(),stl=numeric(),blk=numeric(),tov=numeric(),pf=numeric(),pts=numeric(),
+                          x=character(),ortg=numeric(),drtg=numeric(),link=character(),season=numeric())
+  per36.dt <-data.table(rk=numeric(),player=character(),pos=character(),age=numeric(),tm=character(),g=numeric(),
+                        gs=numeric(),mp=numeric(),fg=numeric(),fga=numeric(),fgpercent=numeric(),x3p=numeric(),
+                        x3pa=numeric(),x3ppercent=numeric(),x2p=numeric(),x2pa=numeric(),x2ppercent=numeric(),
+                        ft=numeric(),fta=numeric(),ftpercent=numeric(),orb=numeric(),drb=numeric(),trb=numeric(),
+                        ast=numeric(),stl=numeric(),blk=numeric(),tov=numeric(),pf=numeric(),pts=numeric(),
+                        link=character(),season=numeric())
+
+  # check which stat types were requested and build output dts correspondingly 
+  if('advanced' %in% type) {
+    for(season in seasons) {
+      tmp <- NBAPerGameAdvStatistics(season = season) %>% data.table()
+      tmp[, season := season]
+      tmp[, player := stri_trans_general(player, 'Latin-ASCII')]
+      advanced.dt <- rbind(advanced.dt, tmp)
+    }
+  }
+  if('standard' %in% type) {
+    for(season in seasons) {
+      tmp <- NBAPerGameStatistics(season = season) %>% data.table()
+      tmp[, season := season]
+      tmp[, player := stri_trans_general(player, 'Latin-ASCII')]
+      standard.dt <- rbind(standard.dt, tmp)
+    }
+  }
+  if('per100' %in% type) {
+    for(season in seasons) {
+      tmp <- NBAPerGameStatisticsPer100Poss(season = season) %>% data.table()
+      tmp[, season := season]
+      tmp[, player := stri_trans_general(player, 'Latin-ASCII')]
+      per100.dt <- rbind(per100.dt, tmp)
+    }
+  }
+  if('per36' %in% type) {
+    for(season in seasons) {
+      tmp <- NBAPerGameStatisticsPer36Min(season = season) %>% data.table()
+      tmp[, season := season]
+      tmp[, player := stri_trans_general(player, 'Latin-ASCII')]
+      per36.dt <- rbind(per36.dt, tmp)
+    }
+  }
+
+  return(
+  	list(advanced = advanced.dt,
+       	 standard = standard.dt,
+       	 per100 = per100.dt, 
+       	 per36 = per36.dt)
+  	)
+}
+# -------------------------------------------------------------------------------
+
+# example function call
+data <- playerStats(type = c('advanced', 'standard', 'per100', 'per36'), seasons = c(1991:2019))
+saveRDS(data, './data/stats.rds')
